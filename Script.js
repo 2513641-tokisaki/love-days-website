@@ -101,6 +101,16 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
+window.saveNames = async function () {
+    const name1 = document.getElementById('name-1').value;
+    const name2 = document.getElementById('name-2').value;
+    userData.name1 = name1;
+    userData.name2 = name2;
+    try {
+        await updateDoc(doc(db, "users", currentUserObj.uid), { name1, name2 });
+    } catch (e) { console.error(e); }
+}
+
 function initApp() {
     document.getElementById('start-date-input').value = userData.startDate || new Date().toISOString().split('T')[0];
 
