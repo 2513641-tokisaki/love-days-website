@@ -1,0 +1,95 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Story ❤️</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div id="auth-screen">
+        <div class="auth-box glass">
+            <h2><i class="fa-solid fa-lock"></i> Private Space</h2>
+            <p>Vui lòng nhập mật khẩu để vào</p>
+            <input type="password" id="pwd-input" placeholder="Mật khẩu là: 1234">
+            <button onclick="checkPassword()">Mở Khóa</button>
+            <p id="auth-error" style="color: red; display: none; margin-top: 10px;">Sai mật khẩu!</p>
+        </div>
+    </div>
+
+    <main id="app-content" style="display: none;">
+        <div id="hearts-container"></div>
+
+        <audio id="bg-music" loop>
+            <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3" type="audio/mpeg">
+        </audio>
+
+        <header>
+            <div class="controls">
+                <button id="music-btn" class="glass-btn" onclick="toggleMusic()" title="Bật/Tắt Nhạc">
+                    <i class="fa-solid fa-music"></i>
+                </button>
+                <button id="theme-btn" class="glass-btn" onclick="toggleTheme()" title="Sáng/Tối">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <section id="hero" class="glass text-center">
+            <h1>Our Love Story</h1>
+            <p class="subtitle">"Counting every precious moment together"</p>
+            <div id="quote-box" class="italic-text">Đang tải quote...</div>
+        </section>
+
+        <section id="counter" class="glass text-center">
+            <h2><i class="fa-solid fa-heart pulse"></i> Thời Gian Bên Nhau <i class="fa-solid fa-heart pulse"></i></h2>
+
+            <div style="margin-bottom: 25px;">
+                <label for="start-date-input" style="font-weight: bold; color: var(--primary-color);">Chọn ngày bắt đầu yêu:</label>
+                <br>
+                <input type="date" id="start-date-input" onchange="setStartDate()" style="margin-top: 10px; cursor: pointer;">
+            </div>
+            <div class="time-blocks">
+                <div class="time-box"><span id="days">0</span><p>Ngày</p></div>
+                <div class="time-box"><span id="hours">0</span><p>Giờ</p></div>
+                <div class="time-box"><span id="mins">0</span><p>Phút</p></div>
+                <div class="time-box"><span id="secs">0</span><p>Giây</p></div>
+            </div>
+        </section>
+
+        <section id="events" class="glass">
+            <h2><i class="fa-solid fa-calendar-check"></i> Ngày Kỷ Niệm</h2>
+            <div class="add-form">
+                <input type="text" id="event-name" placeholder="Tên sự kiện (VD: Sinh nhật)">
+                <input type="date" id="event-date">
+                <button onclick="addEvent()" class="btn-primary">Thêm</button>
+            </div>
+            <div id="events-list" class="grid-list">
+            </div>
+        </section>
+
+        <section id="gallery" class="glass">
+            <h2><i class="fa-solid fa-image"></i> Album Kỷ Niệm</h2>
+            <div class="upload-area">
+                <input type="file" id="image-upload" accept="image/*" multiple onchange="handleImageUpload(event)">
+                <label for="image-upload" class="upload-btn"><i class="fa-solid fa-upload"></i> Chọn ảnh để tải lên</label>
+                <p class="small-note">(Dữ liệu lưu tạm trên trình duyệt - LocalStorage)</p>
+            </div>
+            <div id="photo-grid" class="photo-grid">
+            </div>
+        </section>
+
+        <footer class="text-center">
+            <p>Made with ❤️ for you.</p>
+        </footer>
+    </main>
+
+    <div id="image-modal" class="modal" onclick="closeModal()">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modal-img">
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
