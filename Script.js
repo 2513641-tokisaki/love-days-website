@@ -31,17 +31,7 @@ const quotes = [
     "Cảm ơn vì đã đến và làm thanh xuân thêm rực rỡ."
 ];
 
-/* ================= HỆ THỐNG XÁC THỰC TÀI KHOẢN ================= */
-window.switchAuthMode = function(mode) {
-    if(mode === 'register') {
-        document.getElementById('login-form').style.display = 'none';
-        document.getElementById('register-form').style.display = 'block';
-    } else {
-        document.getElementById('login-form').style.display = 'block';
-        document.getElementById('register-form').style.display = 'none';
-    }
-}
-
+// Đăng ký tài khoản mới bằng Email
 window.registerAccount = async function() {
     const email = document.getElementById('reg-user').value.trim();
     const pass = document.getElementById('reg-pwd').value;
@@ -57,29 +47,8 @@ window.registerAccount = async function() {
         errorPlc.innerText = "Lỗi: " + error.message;
     }
 }
-}
 
-// Đăng nhập tài khoản
-window.loginAccount = async function() {
-    const email = document.getElementById('pwd-user').value.trim();
-    const pass = document.getElementById('pwd-input').value;
-    const errorPlc = document.getElementById('auth-error');
-
-    try {
-        await signInWithEmailAndPassword(auth, email, pass);
-    } catch (error) {
-        errorPlc.style.display = 'block';
-        errorPlc.innerText = "Sai tài khoản hoặc mật khẩu!";
-    }
-}
-
-// Đăng xuất
-window.logoutAccount = function() {
-    signOut(auth).then(() => {
-        location.reload();
-    });
-}
-
+// Lắng nghe trạng thái đăng nhập hệ thống công khai
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUserObj = user;
@@ -107,7 +76,6 @@ onAuthStateChanged(auth, async (user) => {
         if(heartInterval) clearInterval(heartInterval);
     }
 });
-
 // Khai báo biến toàn cục (Thay cho biến cũ)
 let currentUserObj = null;
 let userData = { startDate: new Date().toISOString().split('T')[0], events: [], images: [] };
