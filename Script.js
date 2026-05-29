@@ -1,28 +1,29 @@
 ﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-// ĐIỀN THÔNG TIN CẤU HÌNH CONFIG CỦA BẠN VÀO ĐÂY SAU KHI TẠO ACCOUNT FIREBASE
+// THÔNG TIN CẤU HÌNH FIREBASE CỦA BẠN
 const firebaseConfig = {
-  apiKey: "AIzaSyDtrbvV6c9yXNaluWTY-70JtuSBR-I-fSU",
-  authDomain: "love-day-project.firebaseapp.com",
-  projectId: "love-day-project",
-  storageBucket: "love-day-project.firebasestorage.app",
-  messagingSenderId: "631964796060",
-  appId: "1:631964796060:web:c69d09c691dabe8d361959",
-  measurementId: "G-062PRTT7ZL"
+    apiKey: "AIzaSyDtrbvV6c9yXNaluWTY-70JtuSBR-I-fSU",
+    authDomain: "love-day-project.firebaseapp.com",
+    projectId: "love-day-project",
+    storageBucket: "love-day-project.firebasestorage.app",
+    messagingSenderId: "631964796060",
+    appId: "1:631964796060:web:c69d09c691dabe8d361959",
+    measurementId: "G-062PRTT7ZL"
 };
 
-// Khởi tạo các dịch vụ
+// KHỞI TẠO DỊCH VỤ
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
+// KHAI BÁO BIẾN TOÀN CỤC (Chỉ khai báo 1 lần duy nhất)
 let currentUserObj = null;
 let userData = { startDate: new Date().toISOString().split('T')[0], events: [], images: [] };
 let counterInterval = null;
+let quoteInterval = null;
+let heartInterval = null;
 
 const quotes = [
     "You are my today and all of my tomorrows.",
@@ -50,7 +51,6 @@ window.registerAccount = async function () {
     if (!email || !pass) return alert("Vui lòng điền đủ email và mật khẩu!");
 
     try {
-        // Chỉ cần tạo tài khoản, Firebase sẽ TỰ ĐỘNG đăng nhập và nhảy vào app
         await createUserWithEmailAndPassword(auth, email, pass);
         alert("Đăng ký thành công!");
     } catch (error) {
@@ -80,7 +80,7 @@ window.logoutAccount = function () {
     });
 }
 
-// Lắng nghe trạng thái đăng nhập hệ thống công khai
+// Lắng nghe trạng thái đăng nhập hệ thống
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUserObj = user;
@@ -88,7 +88,7 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('app-content').style.display = 'block';
         document.getElementById('user-display').innerText = `Hi, ${user.email.split('@')[0]}`;
 
-        // Lấy dữ liệu của user, nếu chưa có (User mới) thì tạo file data gốc
+        // Lấy dữ liệu của user, nếu chưa có thì tạo file data gốc
         const docRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
@@ -102,18 +102,13 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('auth-screen').style.display = 'flex';
         document.getElementById('app-content').style.display = 'none';
 
-        // DỌN DẸP BỘ NHỚ KHI ĐĂNG XUẤT ĐỂ CHỐNG LAG
+        // Dọn dẹp bộ nhớ khi đăng xuất để chống lag
         if (counterInterval) clearInterval(counterInterval);
         if (quoteInterval) clearInterval(quoteInterval);
         if (heartInterval) clearInterval(heartInterval);
     }
 });
-// Khai báo biến toàn cục (Thay cho biến cũ)
-let currentUserObj = null;
-let userData = { startDate: new Date().toISOString().split('T')[0], events: [], images: [] };
-let counterInterval = null;
-let quoteInterval = null;  // Thêm biến quản lý Quote
-let heartInterval = null;  // Thêm biến quản lý Trái tim
+
 /* ================= KHỞI CHẠY KHÔNG GIAN RIÊNG ================= */
 function initApp() {
     document.getElementById('start-date-input').value = userData.startDate || new Date().toISOString().split('T')[0];
@@ -133,28 +128,8 @@ function initApp() {
     loadImages();
 }
 
-/* ================= CÁC HIỆU ỨNG THỜI TIẾT, HẠT VÀ NHẠC ================= */
-// ... (Hàm changeQuote giữ nguyên) ...
-
-function createFloatingHearts() {
-    const container = document.getElementById('hearts-container');
-    if(!container) return;
-
-    // Xóa bộ tạo tim cũ trước khi chạy bộ mới (CHỐNG LAG)
-    if(heartInterval) clearInterval(heartInterval);
-
-    heartInterval = setInterval(() => {
-        const heart = document.createElement('i');
-        heart.classList.add('fa-solid', 'fa-heart', 'heart-anim');
-        heart.style.left = Math.random() * 100 + 'vw';
-        heart.style.animationDuration = Math.random() * 3 + 2 + 's';
-        heart.style.fontSize = Math.random() * 20 + 10 + 'px';
-        container.appendChild(heart);
-        setTimeout(() => { heart.remove(); }, 5000);
-    }, 600);
-}
-/* ================= BỘ ĐẾM THỜI GIANReal-time ================= */
-window.setStartDate = async function() {
+/* ================= BỘ ĐẾM THỜI GIAN REAL-TIME ================= */
+window.setStartDate = async function () {
     const inputDate = document.getElementById('start-date-input').value;
     if (inputDate && currentUserObj) {
         userData.startDate = inputDate;
@@ -188,21 +163,21 @@ function updateCounter() {
 }
 
 /* ================= QUẢN LÝ SỰ KIỆN KỶ NIỆM ================= */
-window.addEvent = async function() {
+window.addEvent = async function () {
     const name = document.getElementById('event-name').value;
     const date = document.getElementById('event-date').value;
     if (!name || !date) return alert('Vui lòng nhập đủ thông tin!');
 
-    if(!userData.events) userData.events = [];
+    if (!userData.events) userData.events = [];
     userData.events.push({ id: Date.now(), name, date });
-    
+
     await updateDoc(doc(db, "users", currentUserObj.uid), { events: userData.events });
     document.getElementById('event-name').value = '';
     document.getElementById('event-date').value = '';
     loadEvents();
 }
 
-window.deleteEvent = async function(id) {
+window.deleteEvent = async function (id) {
     userData.events = userData.events.filter(e => e.id !== id);
     await updateDoc(doc(db, "users", currentUserObj.uid), { events: userData.events });
     loadEvents();
@@ -211,7 +186,7 @@ window.deleteEvent = async function(id) {
 function loadEvents() {
     const list = document.getElementById('events-list');
     list.innerHTML = '';
-    if(!userData.events) return;
+    if (!userData.events) return;
     userData.events.forEach(e => {
         const card = document.createElement('div');
         card.className = 'event-card';
@@ -224,27 +199,24 @@ function loadEvents() {
     });
 }
 
-/* ================= LƯU TRỮ ẢNH KHÔNG GIỚI HẠN (LƯU THẲNG VÀO DATABASE) ================= */
-window.handleImageUpload = async function(event) {
+/* ================= LƯU TRỮ ẢNH (DATABASE) ================= */
+window.handleImageUpload = async function (event) {
     const files = event.target.files;
     const status = document.getElementById('upload-status');
-    if(!userData.images) userData.images = [];
+    if (!userData.images) userData.images = [];
 
     for (let file of files) {
         status.innerText = `Đang tối ưu ảnh: ${file.name}...`;
-        
-        // Đọc ảnh và chuyển thành chuỗi Base64 để lưu vào Database
+
         const reader = new FileReader();
         const blobUrl = await new Promise((resolve) => {
             reader.onload = (e) => resolve(e.target.result);
             reader.readAsDataURL(file);
         });
 
-        // Thêm chuỗi ảnh này vào danh sách của User
         userData.images.push({ url: blobUrl });
     }
 
-    // Lưu thẳng lên Firestore Database (Cái này hoàn toàn MIỄN PHÍ)
     try {
         await updateDoc(doc(db, "users", currentUserObj.uid), { images: userData.images });
         status.innerText = "Tải lên Cloud thành công!";
@@ -255,12 +227,11 @@ window.handleImageUpload = async function(event) {
     setTimeout(() => status.innerText = "", 3000);
 }
 
-window.deleteImage = async function(index, event) {
+window.deleteImage = async function (index, event) {
     event.stopPropagation();
-    if(confirm("Bạn có chắc muốn xóa vĩnh viễn ảnh này?")) {
+    if (confirm("Bạn có chắc muốn xóa vĩnh viễn ảnh này?")) {
         try {
             userData.images.splice(index, 1);
-            // Cập nhật lại danh sách sau khi xóa lên Database
             await updateDoc(doc(db, "users", currentUserObj.uid), { images: userData.images });
             loadImages();
         } catch (error) {
@@ -272,11 +243,11 @@ window.deleteImage = async function(index, event) {
 function loadImages() {
     const grid = document.getElementById('photo-grid');
     grid.innerHTML = '';
-    if(!userData.images) return;
+    if (!userData.images) return;
     userData.images.forEach((imgObj, index) => {
         const imgContainer = document.createElement('div');
         imgContainer.style.position = 'relative';
-        
+
         const img = document.createElement('img');
         img.src = imgObj.url;
         img.className = 'photo-item';
@@ -285,17 +256,18 @@ function loadImages() {
         const delBtn = document.createElement('button');
         delBtn.innerHTML = '&times;';
         delBtn.style.cssText = 'position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-size: 16px;';
-        delBtn.onclick = (e) => deleteImage(index, e); // Sửa lại hàm delete ngắn gọn hơn
+        delBtn.onclick = (e) => deleteImage(index, e);
 
         imgContainer.appendChild(img);
         imgContainer.appendChild(delBtn);
         grid.appendChild(imgContainer);
     });
 }
-/* ================= CÁC HIỆU ỨNG THỜI TIẾT, HẠT VÀ NHẠC ================= */
+
+/* ================= CÁC HIỆU ỨNG ================= */
 function changeQuote() {
     const quoteBox = document.getElementById('quote-box');
-    if(!quoteBox) return;
+    if (!quoteBox) return;
     const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
     quoteBox.style.opacity = 0;
     setTimeout(() => {
@@ -306,8 +278,11 @@ function changeQuote() {
 
 function createFloatingHearts() {
     const container = document.getElementById('hearts-container');
-    if(!container) return;
-    setInterval(() => {
+    if (!container) return;
+
+    if (heartInterval) clearInterval(heartInterval);
+
+    heartInterval = setInterval(() => {
         const heart = document.createElement('i');
         heart.classList.add('fa-solid', 'fa-heart', 'heart-anim');
         heart.style.left = Math.random() * 100 + 'vw';
@@ -319,14 +294,14 @@ function createFloatingHearts() {
 }
 
 let isPlaying = false;
-window.toggleMusic = function() {
+window.toggleMusic = function () {
     const audio = document.getElementById('bg-music');
     const btn = document.getElementById('music-btn');
-    if (isPlaying) { audio.pause(); btn.innerHTML = '<i class="fa-solid fa-music"></i>'; } 
+    if (isPlaying) { audio.pause(); btn.innerHTML = '<i class="fa-solid fa-music"></i>'; }
     else { audio.play(); btn.innerHTML = '<i class="fa-solid fa-pause"></i>'; }
     isPlaying = !isPlaying;
 }
 
-window.toggleTheme = function() { document.body.classList.toggle('dark-mode'); }
-window.openModal = function(src) { document.getElementById('image-modal').style.display = 'block'; document.getElementById('modal-img').src = src; }
-window.closeModal = function() { document.getElementById('image-modal').style.display = 'none'; }
+window.toggleTheme = function () { document.body.classList.toggle('dark-mode'); }
+window.openModal = function (src) { document.getElementById('image-modal').style.display = 'block'; document.getElementById('modal-img').src = src; }
+window.closeModal = function () { document.getElementById('image-modal').style.display = 'none'; }
