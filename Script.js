@@ -1,68 +1,139 @@
-﻿/* ================= THIẾT LẬP CƠ BẢN ================= */
-const PASSWORD = "1234"; // Đổi mật khẩu ở đây
+﻿import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-// Lấy ngày đã lưu trong LocalStorage, nếu chưa có thì lấy ngày hôm nay
-let START_DATE = new Date();
-const savedDate = localStorage.getItem('love_start_date');
-if (savedDate) {
-    START_DATE = new Date(savedDate);
-}
+// ĐIỀN THÔNG TIN CẤU HÌNH CONFIG CỦA BẠN VÀO ĐÂY SAU KHI TẠO ACCOUNT FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyDtrbvV6c9yXNaluWTY-70JtuSBR-I-fSU",
+  authDomain: "love-day-project.firebaseapp.com",
+  projectId: "love-day-project",
+  storageBucket: "love-day-project.firebasestorage.app",
+  messagingSenderId: "631964796060",
+  appId: "1:631964796060:web:c69d09c691dabe8d361959",
+  measurementId: "G-062PRTT7ZL"
+};
+
+// Khởi tạo các dịch vụ
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+let currentUserObj = null;
+let userData = { startDate: new Date().toISOString().split('T')[0], events: [], images: [] };
+let counterInterval = null;
 
 const quotes = [
     "You are my today and all of my tomorrows.",
     "Every love story is beautiful, but ours is my favorite.",
     "I look at you and see the rest of my life in front of my eyes.",
-    "Cảm ơn vì đã đến và làm thanh xuân của anh thêm rực rỡ."
+    "Cảm ơn vì đã đến và làm thanh xuân thêm rực rỡ."
 ];
 
-/* ================= XỬ LÝ KHÓA (AUTH) ================= */
-function checkPassword() {
-    const input = document.getElementById('pwd-input').value;
-    if (input === PASSWORD) {
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('app-content').style.display = 'block';
-        initApp();
+/* ================= HỆ THỐNG XÁC THỰC TÀI KHOẢN ================= */
+window.switchAuthMode = function(mode) {
+    if(mode === 'register') {
+        document.getElementById('login-form').style.display = 'none';
+        document.getElementById('register-form').style.display = 'block';
     } else {
-        document.getElementById('auth-error').style.display = 'block';
+        document.getElementById('login-form').style.display = 'block';
+        document.getElementById('register-form').style.display = 'none';
     }
 }
 
-/* ================= KHỞI CHẠY APP ================= */
-function initApp() {
-    // Hiển thị ngày đã chọn lên ô input
-    if (savedDate) {
-        document.getElementById('start-date-input').value = savedDate;
+// Đăng ký tài khoản mới bằng Email
+window.registerAccount = async function() {
+    const email = document.getElementById('reg-user').value.trim();
+    const pass = document.getElementById('reg-pwd').value;
+    const errorPlc = document.getElementById('auth-error');
+    if(!email || !pass) return alert("Vui lòng điền đủ email và mật khẩu!");
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+        const user = userCredential.user;
+        // Tạo sẵn một document trống lưu dữ liệu cho User này trong Firestore Database
+        await setDoc(doc(db, "users", user.uid), userData);
+        alert("Đăng ký thành công!");
+        switchAuthMode('login');
+    } catch (error) {
+        errorPlc.style.display = 'block';
+        errorPlc.innerText = error.message;
     }
+}
 
+// Đăng nhập tài khoản
+window.loginAccount = async function() {
+    const email = document.getElementById('pwd-user').value.trim();
+    const pass = document.getElementById('pwd-input').value;
+    const errorPlc = document.getElementById('auth-error');
+
+    try {
+        await signInWithEmailAndPassword(auth, email, pass);
+    } catch (error) {
+        errorPlc.style.display = 'block';
+        errorPlc.innerText = "Sai tài khoản hoặc mật khẩu!";
+    }
+}
+
+// Đăng xuất
+window.logoutAccount = function() {
+    signOut(auth).then(() => {
+        location.reload();
+    });
+}
+
+// Lắng nghe trạng thái đăng nhập hệ thống công khai
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        currentUserObj = user;
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('app-content').style.display = 'block';
+        document.getElementById('user-display').innerText = `Hi, ${user.email.split('@')[0]}`;
+        
+        // Lấy dữ liệu của user này từ Cloud về trang web
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            userData = docSnap.data();
+        }
+        initApp();
+    } else {
+        document.getElementById('auth-screen').style.display = 'flex';
+        document.getElementById('app-content').style.display = 'none';
+    }
+});
+
+/* ================= KHỞI CHẠY KHÔNG GIAN RIÊNG ================= */
+function initApp() {
+    document.getElementById('start-date-input').value = userData.startDate || new Date().toISOString().split('T')[0];
     updateCounter();
-    setInterval(updateCounter, 1000); // Cập nhật mỗi giây
-
+    if(counterInterval) clearInterval(counterInterval);
+    counterInterval = setInterval(updateCounter, 1000);
+    
     changeQuote();
     setInterval(changeQuote, 5000);
-
     createFloatingHearts();
     loadEvents();
     loadImages();
-    checkAnniversaries();
 }
 
-/* ================= LOGIC BỘ ĐẾM (COUNTER) ================= */
-// Hàm lưu ngày người dùng chọn
-function setStartDate() {
+/* ================= BỘ ĐẾM THỜI GIANReal-time ================= */
+window.setStartDate = async function() {
     const inputDate = document.getElementById('start-date-input').value;
-    if (inputDate) {
-        START_DATE = new Date(inputDate);
-        localStorage.setItem('love_start_date', inputDate);
-        updateCounter(); // Cập nhật bộ đếm ngay lập tức
+    if (inputDate && currentUserObj) {
+        userData.startDate = inputDate;
+        await updateDoc(doc(db, "users", currentUserObj.uid), { startDate: inputDate });
+        updateCounter();
     }
 }
 
 function updateCounter() {
     const now = new Date();
-    const diff = now - START_DATE;
+    const startTime = new Date(userData.startDate);
+    const diff = now - startTime;
 
-    // Nếu chọn ngày ở tương lai thì set về 0
-    if (diff < 0) {
+    if (diff < 0 || isNaN(diff)) {
         document.getElementById('days').innerText = '0';
         document.getElementById('hours').innerText = '00';
         document.getElementById('mins').innerText = '00';
@@ -81,81 +152,32 @@ function updateCounter() {
     document.getElementById('secs').innerText = secs < 10 ? '0' + secs : secs;
 }
 
-// ... (Các phần code Quotes, Music, Events, Gallery giữ nguyên như cũ)
-
-/* ================= QUOTES & HIỆU ỨNG ================= */
-function changeQuote() {
-    const quoteBox = document.getElementById('quote-box');
-    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
-    quoteBox.style.opacity = 0; // Hiệu ứng fade out
-    setTimeout(() => {
-        quoteBox.innerText = `"${randomQuote}"`;
-        quoteBox.style.opacity = 1; // Hiệu ứng fade in
-    }, 500);
-}
-
-function createFloatingHearts() {
-    const container = document.getElementById('hearts-container');
-    setInterval(() => {
-        const heart = document.createElement('i');
-        heart.classList.add('fa-solid', 'fa-heart', 'heart-anim');
-        heart.style.left = Math.random() * 100 + 'vw';
-        heart.style.animationDuration = Math.random() * 3 + 2 + 's'; // Từ 2s đến 5s
-        heart.style.fontSize = Math.random() * 20 + 10 + 'px';
-        container.appendChild(heart);
-
-        // Xóa sau khi bay xong để tránh lag
-        setTimeout(() => { heart.remove(); }, 5000);
-    }, 500); // 0.5s tạo 1 tim
-}
-
-/* ================= ÂM NHẠC & CHỦ ĐỀ ================= */
-let isPlaying = false;
-function toggleMusic() {
-    const audio = document.getElementById('bg-music');
-    const btn = document.getElementById('music-btn');
-    if (isPlaying) {
-        audio.pause();
-        btn.innerHTML = '<i class="fa-solid fa-music"></i>';
-    } else {
-        audio.play();
-        btn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-    }
-    isPlaying = !isPlaying;
-}
-
-function toggleTheme() {
-    document.body.classList.toggle('dark-mode');
-}
-
-/* ================= SỰ KIỆN QUAN TRỌNG (CRUD) ================= */
-let events = JSON.parse(localStorage.getItem('love_events')) || [];
-
-function saveEvents() {
-    localStorage.setItem('love_events', JSON.stringify(events));
-    loadEvents();
-}
-
-function addEvent() {
+/* ================= QUẢN LÝ SỰ KIỆN KỶ NIỆM ================= */
+window.addEvent = async function() {
     const name = document.getElementById('event-name').value;
     const date = document.getElementById('event-date').value;
     if (!name || !date) return alert('Vui lòng nhập đủ thông tin!');
 
-    events.push({ id: Date.now(), name, date });
+    if(!userData.events) userData.events = [];
+    userData.events.push({ id: Date.now(), name, date });
+    
+    await updateDoc(doc(db, "users", currentUserObj.uid), { events: userData.events });
     document.getElementById('event-name').value = '';
     document.getElementById('event-date').value = '';
-    saveEvents();
+    loadEvents();
 }
 
-function deleteEvent(id) {
-    events = events.filter(e => e.id !== id);
-    saveEvents();
+window.deleteEvent = async function(id) {
+    userData.events = userData.events.filter(e => e.id !== id);
+    await updateDoc(doc(db, "users", currentUserObj.uid), { events: userData.events });
+    loadEvents();
 }
 
 function loadEvents() {
     const list = document.getElementById('events-list');
     list.innerHTML = '';
-    events.forEach(e => {
+    if(!userData.events) return;
+    userData.events.forEach(e => {
         const card = document.createElement('div');
         card.className = 'event-card';
         card.innerHTML = `
@@ -167,82 +189,109 @@ function loadEvents() {
     });
 }
 
-function checkAnniversaries() {
-    const today = new Date();
-    const currentMonth = today.getMonth() + 1;
-    const currentDate = today.getDate();
-
-    events.forEach(e => {
-        const eventDate = new Date(e.date);
-        if (eventDate.getMonth() + 1 === currentMonth && eventDate.getDate() === currentDate) {
-            alert(`🎉 CHÚC MỪNG! Hôm nay là ${e.name} ❤️`);
-        }
-    });
-}
-
-/* ================= THƯ VIỆN ẢNH (LƯU LOCALSTORAGE) ================= */
-// LƯU Ý CHO DEV: LocalStorage giới hạn khoảng 5MB. 
-// Nếu tải lên ảnh độ phân giải quá cao sẽ nhanh chóng bị đầy và báo lỗi QuotaExceededError.
-let images = JSON.parse(localStorage.getItem('love_images')) || [];
-
-function saveImages() {
-    try {
-        localStorage.setItem('love_images', JSON.stringify(images));
-        loadImages();
-    } catch (e) {
-        alert("Bộ nhớ tạm đã đầy! Vui lòng xóa bớt ảnh cũ.");
-        images.pop(); // Xóa tấm cuối cùng vừa thêm vào
-    }
-}
-
-function handleImageUpload(event) {
+/* ================= LƯU TRỮ ẢNH KHÔNG GIỚI HẠN (LƯU THẲNG VÀO DATABASE) ================= */
+window.handleImageUpload = async function(event) {
     const files = event.target.files;
+    const status = document.getElementById('upload-status');
+    if(!userData.images) userData.images = [];
+
     for (let file of files) {
+        status.innerText = `Đang tối ưu ảnh: ${file.name}...`;
+        
+        // Đọc ảnh và chuyển thành chuỗi Base64 để lưu vào Database
         const reader = new FileReader();
-        reader.onload = function (e) {
-            images.push(e.target.result); // Lưu dưới dạng base64
-            saveImages();
-        };
-        reader.readAsDataURL(file);
+        const blobUrl = await new Promise((resolve) => {
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(file);
+        });
+
+        // Thêm chuỗi ảnh này vào danh sách của User
+        userData.images.push({ url: blobUrl });
     }
+
+    // Lưu thẳng lên Firestore Database (Cái này hoàn toàn MIỄN PHÍ)
+    try {
+        await updateDoc(doc(db, "users", currentUserObj.uid), { images: userData.images });
+        status.innerText = "Tải lên Cloud thành công!";
+        loadImages();
+    } catch (error) {
+        alert("Lỗi khi lưu ảnh lên Cloud: " + error.message);
+    }
+    setTimeout(() => status.innerText = "", 3000);
 }
 
-function deleteImage(index, event) {
-    event.stopPropagation(); // Ngăn chặn nổi bọt click (không mở ảnh to)
-    if (confirm("Bạn có chắc muốn xóa ảnh này?")) {
-        images.splice(index, 1);
-        saveImages();
+window.deleteImage = async function(index, event) {
+    event.stopPropagation();
+    if(confirm("Bạn có chắc muốn xóa vĩnh viễn ảnh này?")) {
+        try {
+            userData.images.splice(index, 1);
+            // Cập nhật lại danh sách sau khi xóa lên Database
+            await updateDoc(doc(db, "users", currentUserObj.uid), { images: userData.images });
+            loadImages();
+        } catch (error) {
+            alert("Lỗi khi xóa ảnh: " + error.message);
+        }
     }
 }
 
 function loadImages() {
     const grid = document.getElementById('photo-grid');
     grid.innerHTML = '';
-    images.forEach((src, index) => {
+    if(!userData.images) return;
+    userData.images.forEach((imgObj, index) => {
         const imgContainer = document.createElement('div');
         imgContainer.style.position = 'relative';
-
+        
         const img = document.createElement('img');
-        img.src = src;
+        img.src = imgObj.url;
         img.className = 'photo-item';
-        img.onclick = () => openModal(src);
+        img.onclick = () => openModal(imgObj.url);
 
         const delBtn = document.createElement('button');
         delBtn.innerHTML = '&times;';
         delBtn.style.cssText = 'position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-size: 16px;';
-        delBtn.onclick = (e) => deleteImage(index, e);
+        delBtn.onclick = (e) => deleteImage(index, e); // Sửa lại hàm delete ngắn gọn hơn
 
         imgContainer.appendChild(img);
         imgContainer.appendChild(delBtn);
         grid.appendChild(imgContainer);
     });
 }
+/* ================= CÁC HIỆU ỨNG THỜI TIẾT, HẠT VÀ NHẠC ================= */
+function changeQuote() {
+    const quoteBox = document.getElementById('quote-box');
+    if(!quoteBox) return;
+    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+    quoteBox.style.opacity = 0;
+    setTimeout(() => {
+        quoteBox.innerText = `"${randomQuote}"`;
+        quoteBox.style.opacity = 1;
+    }, 500);
+}
 
-/* ================= MODAL XEM ẢNH ================= */
-function openModal(src) {
-    document.getElementById('image-modal').style.display = 'block';
-    document.getElementById('modal-img').src = src;
+function createFloatingHearts() {
+    const container = document.getElementById('hearts-container');
+    if(!container) return;
+    setInterval(() => {
+        const heart = document.createElement('i');
+        heart.classList.add('fa-solid', 'fa-heart', 'heart-anim');
+        heart.style.left = Math.random() * 100 + 'vw';
+        heart.style.animationDuration = Math.random() * 3 + 2 + 's';
+        heart.style.fontSize = Math.random() * 20 + 10 + 'px';
+        container.appendChild(heart);
+        setTimeout(() => { heart.remove(); }, 5000);
+    }, 600);
 }
-function closeModal() {
-    document.getElementById('image-modal').style.display = 'none';
+
+let isPlaying = false;
+window.toggleMusic = function() {
+    const audio = document.getElementById('bg-music');
+    const btn = document.getElementById('music-btn');
+    if (isPlaying) { audio.pause(); btn.innerHTML = '<i class="fa-solid fa-music"></i>'; } 
+    else { audio.play(); btn.innerHTML = '<i class="fa-solid fa-pause"></i>'; }
+    isPlaying = !isPlaying;
 }
+
+window.toggleTheme = function() { document.body.classList.toggle('dark-mode'); }
+window.openModal = function(src) { document.getElementById('image-modal').style.display = 'block'; document.getElementById('modal-img').src = src; }
+window.closeModal = function() { document.getElementById('image-modal').style.display = 'none'; }
