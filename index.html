@@ -52,11 +52,28 @@
 
         <section id="counter" class="glass text-center">
             <h2><i class="fa-solid fa-heart pulse"></i> Thời Gian Bên Nhau <i class="fa-solid fa-heart pulse"></i></h2>
+
+            <div class="couple-avatars">
+                <div class="avatar-wrapper">
+                    <img id="avatar-1" src="https://i.pinimg.com/736x/2b/96/6c/2b966c85e2cf0be1cb4071ecb18ec4e1.jpg" alt="Avatar 1" onclick="document.getElementById('file-avt-1').click()" title="Click để đổi ảnh">
+                    <input type="file" id="file-avt-1" accept="image/*" style="display: none;" onchange="handleAvatarUpload(1, event)">
+                </div>
+
+                <i class="fa-solid fa-heart pulse big-heart"></i>
+
+                <div class="avatar-wrapper">
+                    <img id="avatar-2" src="https://i.pinimg.com/736x/8f/30/fb/8f30fb5e8452140bbbf611f77435f217.jpg" alt="Avatar 2" onclick="document.getElementById('file-avt-2').click()" title="Click để đổi ảnh">
+                    <input type="file" id="file-avt-2" accept="image/*" style="display: none;" onchange="handleAvatarUpload(2, event)">
+                </div>
+            </div>
+            <p class="small-note" style="margin-bottom: 25px;">(Click vào từng hình tròn để đổi ảnh đại diện)</p>
+
             <div style="margin-bottom: 25px;">
                 <label for="start-date-input" style="font-weight: bold; color: var(--primary-color);">Chọn ngày bắt đầu yêu:</label>
                 <br>
                 <input type="date" id="start-date-input" onchange="setStartDate()" style="margin-top: 10px; cursor: pointer;">
             </div>
+
             <div class="time-blocks">
                 <div class="time-box"><span id="days">0</span><p>Ngày</p></div>
                 <div class="time-box"><span id="hours">0</span><p>Giờ</p></div>

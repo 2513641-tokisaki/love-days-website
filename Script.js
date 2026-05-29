@@ -2,7 +2,6 @@
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// THÔNG TIN CẤU HÌNH FIREBASE CỦA BẠN
 const firebaseConfig = {
     apiKey: "AIzaSyDtrbvV6c9yXNaluWTY-70JtuSBR-I-fSU",
     authDomain: "love-day-project.firebaseapp.com",
@@ -13,14 +12,12 @@ const firebaseConfig = {
     measurementId: "G-062PRTT7ZL"
 };
 
-// KHỞI TẠO DỊCH VỤ
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// KHAI BÁO BIẾN TOÀN CỤC (Chỉ khai báo 1 lần duy nhất)
 let currentUserObj = null;
-let userData = { startDate: new Date().toISOString().split('T')[0], events: [], images: [] };
+let userData = { startDate: new Date().toISOString().split('T')[0], events: [], images: [], avatar1: "", avatar2: "" };
 let counterInterval = null;
 let quoteInterval = null;
 let heartInterval = null;
@@ -32,7 +29,6 @@ const quotes = [
     "Cảm ơn vì đã đến và làm thanh xuân thêm rực rỡ."
 ];
 
-/* ================= HỆ THỐNG XÁC THỰC TÀI KHOẢN ================= */
 window.switchAuthMode = function (mode) {
     if (mode === 'register') {
         document.getElementById('login-form').style.display = 'none';
@@ -43,7 +39,6 @@ window.switchAuthMode = function (mode) {
     }
 }
 
-// Đăng ký tài khoản mới bằng Email
 window.registerAccount = async function () {
     const email = document.getElementById('reg-user').value.trim();
     const pass = document.getElementById('reg-pwd').value;
@@ -59,7 +54,6 @@ window.registerAccount = async function () {
     }
 }
 
-// Đăng nhập tài khoản
 window.loginAccount = async function () {
     const email = document.getElementById('pwd-user').value.trim();
     const pass = document.getElementById('pwd-input').value;
@@ -73,15 +67,10 @@ window.loginAccount = async function () {
     }
 }
 
-// Đăng xuất
 window.logoutAccount = function () {
-    signOut(auth).then(() => {
-        location.reload();
-    });
+    signOut(auth).then(() => { location.reload(); });
 }
 
-
-// Lắng nghe trạng thái đăng nhập hệ thống
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUserObj = user;
@@ -89,44 +78,40 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('app-content').style.display = 'block';
         document.getElementById('user-display').innerText = `Hi, ${user.email.split('@')[0]}`;
 
-        // Bọc Try-Catch: Nếu Database lỗi, web vẫn chạy mượt mà
         try {
             const docRef = doc(db, "users", user.uid);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 userData = docSnap.data();
             } else {
-                userData = { startDate: new Date().toISOString().split('T')[0], events: [], images: [] };
+                userData = { startDate: new Date().toISOString().split('T')[0], events: [], images: [], avatar1: "", avatar2: "" };
                 await setDoc(docRef, userData);
             }
         } catch (error) {
             console.error("Lỗi Database:", error);
             alert("Lưu ý: Chưa kết nối được Database. Bạn hãy vào Firebase -> Firestore Database để tạo Database ở chế độ Test Mode nhé!");
         }
-
-        // ĐẢM BẢO HÀM NÀY LUÔN ĐƯỢC GỌI ĐỂ BẬT HIỆU ỨNG
         initApp();
     } else {
         document.getElementById('auth-screen').style.display = 'flex';
         document.getElementById('app-content').style.display = 'none';
-
-        // Dọn dẹp bộ nhớ khi đăng xuất
         if (counterInterval) clearInterval(counterInterval);
         if (quoteInterval) clearInterval(quoteInterval);
         if (heartInterval) clearInterval(heartInterval);
     }
 });
 
-/* ================= KHỞI CHẠY KHÔNG GIAN RIÊNG ================= */
 function initApp() {
     document.getElementById('start-date-input').value = userData.startDate || new Date().toISOString().split('T')[0];
 
-    // Khởi động đồng hồ
+    // Khôi phục avatar nếu đã lưu
+    if (userData.avatar1) document.getElementById('avatar-1').src = userData.avatar1;
+    if (userData.avatar2) document.getElementById('avatar-2').src = userData.avatar2;
+
     updateCounter();
     if (counterInterval) clearInterval(counterInterval);
     counterInterval = setInterval(updateCounter, 1000);
 
-    // Khởi động Quotes
     changeQuote();
     if (quoteInterval) clearInterval(quoteInterval);
     quoteInterval = setInterval(changeQuote, 5000);
@@ -136,21 +121,13 @@ function initApp() {
     loadImages();
 }
 
-/* ================= BỘ ĐẾM THỜI GIAN REAL-TIME ================= */
 window.setStartDate = async function () {
     const inputDate = document.getElementById('start-date-input').value;
     if (inputDate && currentUserObj) {
         userData.startDate = inputDate;
-
-        // Cập nhật số ngày trên màn hình ngay lập tức
         updateCounter();
-
-        // Cố gắng lưu vào Database ngầm phía sau
-        try {
-            await updateDoc(doc(db, "users", currentUserObj.uid), { startDate: inputDate });
-        } catch (error) {
-            console.error("Lỗi: Không thể lưu ngày vào Database", error);
-        }
+        try { await updateDoc(doc(db, "users", currentUserObj.uid), { startDate: inputDate }); }
+        catch (error) { console.error("Lỗi lưu ngày:", error); }
     }
 }
 
@@ -178,6 +155,34 @@ function updateCounter() {
     document.getElementById('secs').innerText = secs < 10 ? '0' + secs : secs;
 }
 
+/* ================= XỬ LÝ ẢNH AVATAR ================= */
+window.handleAvatarUpload = async function (index, event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function (e) {
+        const base64Img = e.target.result;
+        // Hiện ảnh lên web ngay lập tức
+        document.getElementById(`avatar-${index}`).src = base64Img;
+
+        // Lưu vào object
+        if (index === 1) userData.avatar1 = base64Img;
+        else userData.avatar2 = base64Img;
+
+        // Đẩy lên Database
+        try {
+            await updateDoc(doc(db, "users", currentUserObj.uid), {
+                avatar1: userData.avatar1 || "",
+                avatar2: userData.avatar2 || ""
+            });
+        } catch (error) {
+            alert("Lỗi khi lưu ảnh đại diện. Nhớ bật Firestore Database lên nha!");
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
 /* ================= QUẢN LÝ SỰ KIỆN KỶ NIỆM ================= */
 window.addEvent = async function () {
     const name = document.getElementById('event-name').value;
@@ -187,16 +192,18 @@ window.addEvent = async function () {
     if (!userData.events) userData.events = [];
     userData.events.push({ id: Date.now(), name, date });
 
-    await updateDoc(doc(db, "users", currentUserObj.uid), { events: userData.events });
     document.getElementById('event-name').value = '';
     document.getElementById('event-date').value = '';
     loadEvents();
+    try { await updateDoc(doc(db, "users", currentUserObj.uid), { events: userData.events }); }
+    catch (error) { console.error("Lỗi:", error); }
 }
 
 window.deleteEvent = async function (id) {
     userData.events = userData.events.filter(e => e.id !== id);
-    await updateDoc(doc(db, "users", currentUserObj.uid), { events: userData.events });
     loadEvents();
+    try { await updateDoc(doc(db, "users", currentUserObj.uid), { events: userData.events }); }
+    catch (error) { console.error("Lỗi:", error); }
 }
 
 function loadEvents() {
@@ -206,11 +213,7 @@ function loadEvents() {
     userData.events.forEach(e => {
         const card = document.createElement('div');
         card.className = 'event-card';
-        card.innerHTML = `
-            <h3>${e.name}</h3>
-            <p><i class="fa-regular fa-calendar"></i> ${e.date}</p>
-            <button class="del-btn" onclick="deleteEvent(${e.id})"><i class="fa-solid fa-trash"></i></button>
-        `;
+        card.innerHTML = `<h3>${e.name}</h3><p><i class="fa-regular fa-calendar"></i> ${e.date}</p><button class="del-btn" onclick="deleteEvent(${e.id})"><i class="fa-solid fa-trash"></i></button>`;
         list.appendChild(card);
     });
 }
@@ -223,13 +226,11 @@ window.handleImageUpload = async function (event) {
 
     for (let file of files) {
         status.innerText = `Đang tối ưu ảnh: ${file.name}...`;
-
         const reader = new FileReader();
         const blobUrl = await new Promise((resolve) => {
             reader.onload = (e) => resolve(e.target.result);
             reader.readAsDataURL(file);
         });
-
         userData.images.push({ url: blobUrl });
     }
 
@@ -238,7 +239,7 @@ window.handleImageUpload = async function (event) {
         status.innerText = "Tải lên Cloud thành công!";
         loadImages();
     } catch (error) {
-        alert("Lỗi khi lưu ảnh lên Cloud: " + error.message);
+        alert("Lỗi khi lưu ảnh lên Cloud. Hãy kiểm tra lại Database!");
     }
     setTimeout(() => status.innerText = "", 3000);
 }
@@ -250,9 +251,7 @@ window.deleteImage = async function (index, event) {
             userData.images.splice(index, 1);
             await updateDoc(doc(db, "users", currentUserObj.uid), { images: userData.images });
             loadImages();
-        } catch (error) {
-            alert("Lỗi khi xóa ảnh: " + error.message);
-        }
+        } catch (error) { alert("Lỗi khi xóa ảnh: " + error.message); }
     }
 }
 
@@ -263,24 +262,20 @@ function loadImages() {
     userData.images.forEach((imgObj, index) => {
         const imgContainer = document.createElement('div');
         imgContainer.style.position = 'relative';
-
         const img = document.createElement('img');
         img.src = imgObj.url;
         img.className = 'photo-item';
         img.onclick = () => openModal(imgObj.url);
-
         const delBtn = document.createElement('button');
         delBtn.innerHTML = '&times;';
         delBtn.style.cssText = 'position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-size: 16px;';
         delBtn.onclick = (e) => deleteImage(index, e);
-
         imgContainer.appendChild(img);
         imgContainer.appendChild(delBtn);
         grid.appendChild(imgContainer);
     });
 }
 
-/* ================= CÁC HIỆU ỨNG ================= */
 function changeQuote() {
     const quoteBox = document.getElementById('quote-box');
     if (!quoteBox) return;
@@ -295,9 +290,7 @@ function changeQuote() {
 function createFloatingHearts() {
     const container = document.getElementById('hearts-container');
     if (!container) return;
-
     if (heartInterval) clearInterval(heartInterval);
-
     heartInterval = setInterval(() => {
         const heart = document.createElement('i');
         heart.classList.add('fa-solid', 'fa-heart', 'heart-anim');
