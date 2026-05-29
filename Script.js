@@ -80,6 +80,7 @@ window.logoutAccount = function () {
     });
 }
 
+
 // Lắng nghe trạng thái đăng nhập hệ thống
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -88,21 +89,28 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('app-content').style.display = 'block';
         document.getElementById('user-display').innerText = `Hi, ${user.email.split('@')[0]}`;
 
-        // Lấy dữ liệu của user, nếu chưa có thì tạo file data gốc
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            userData = docSnap.data();
-        } else {
-            userData = { startDate: new Date().toISOString().split('T')[0], events: [], images: [] };
-            await setDoc(docRef, userData);
+        // Bọc Try-Catch: Nếu Database lỗi, web vẫn chạy mượt mà
+        try {
+            const docRef = doc(db, "users", user.uid);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                userData = docSnap.data();
+            } else {
+                userData = { startDate: new Date().toISOString().split('T')[0], events: [], images: [] };
+                await setDoc(docRef, userData);
+            }
+        } catch (error) {
+            console.error("Lỗi Database:", error);
+            alert("Lưu ý: Chưa kết nối được Database. Bạn hãy vào Firebase -> Firestore Database để tạo Database ở chế độ Test Mode nhé!");
         }
+
+        // ĐẢM BẢO HÀM NÀY LUÔN ĐƯỢC GỌI ĐỂ BẬT HIỆU ỨNG
         initApp();
     } else {
         document.getElementById('auth-screen').style.display = 'flex';
         document.getElementById('app-content').style.display = 'none';
 
-        // Dọn dẹp bộ nhớ khi đăng xuất để chống lag
+        // Dọn dẹp bộ nhớ khi đăng xuất
         if (counterInterval) clearInterval(counterInterval);
         if (quoteInterval) clearInterval(quoteInterval);
         if (heartInterval) clearInterval(heartInterval);
@@ -133,8 +141,16 @@ window.setStartDate = async function () {
     const inputDate = document.getElementById('start-date-input').value;
     if (inputDate && currentUserObj) {
         userData.startDate = inputDate;
-        await updateDoc(doc(db, "users", currentUserObj.uid), { startDate: inputDate });
+
+        // Cập nhật số ngày trên màn hình ngay lập tức
         updateCounter();
+
+        // Cố gắng lưu vào Database ngầm phía sau
+        try {
+            await updateDoc(doc(db, "users", currentUserObj.uid), { startDate: inputDate });
+        } catch (error) {
+            console.error("Lỗi: Không thể lưu ngày vào Database", error);
+        }
     }
 }
 
