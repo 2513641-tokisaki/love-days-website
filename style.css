@@ -392,7 +392,7 @@ input {
 	justify-content: center;
 	align-items: center;
 	position: relative;
-	top: -10px;
+	top: -20px;
 }
 @media (max-width: 600px) {
 	.avatar-wrapper img {
