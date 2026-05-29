@@ -23,9 +23,9 @@ let quoteInterval = null;
 let heartInterval = null;
 
 const quotes = [
-    "You are my today and all of my tomorrows.",
-    "Every love story is beautiful, but ours is my favorite.",
-    "I look at you and see the rest of my life in front of my eyes.",
+    "Mỗi khi bên nhau đều là những khảnh khắc quý giá <3.",
+    "Luôn bên nhau và mãi mãi không rời xa.",
+    "Trân trọng từng khoảnh khắc đẹp để có những điều qúy giá hơn.",
     "Cảm ơn vì đã đến và làm thanh xuân thêm rực rỡ."
 ];
 
@@ -89,7 +89,7 @@ onAuthStateChanged(auth, async (user) => {
             }
         } catch (error) {
             console.error("Lỗi Database:", error);
-            alert("Lưu ý: Chưa kết nối được Database. Bạn hãy vào Firebase -> Firestore Database để tạo Database ở chế độ Test Mode nhé!");
+            alert("Lưu ý: Chưa kết nối được Database.");
         }
         initApp();
     } else {
@@ -187,7 +187,8 @@ window.handleAvatarUpload = async function (index, event) {
                 avatar2: userData.avatar2 || ""
             });
         } catch (error) {
-            alert("Lỗi khi lưu ảnh đại diện. Nhớ bật Firestore Database lên nha!");
+            alert(".");
+            alert(".");
         }
     };
     reader.readAsDataURL(file);

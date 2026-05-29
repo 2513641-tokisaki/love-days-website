@@ -14,7 +14,7 @@
                 <h2><i class="fa-solid fa-lock"></i> Đăng Nhập</h2>
                 <input type="email" id="pwd-user" placeholder="Email của bạn">
                 <input type="password" id="pwd-input" placeholder="Mật khẩu">
-                <button onclick="loginAccount()">Vào trang web</button>
+                <button onclick="loginAccount()">Đăng Nhập</button>
                 <p style="margin-top: 15px;">Chưa có tài khoản? <a href="#" onclick="switchAuthMode('register')">Đăng ký ngay</a></p>
             </div>
 
@@ -46,7 +46,7 @@
 
         <section id="hero" class="glass text-center">
             <h1>Our Love Story</h1>
-            <p class="subtitle">"Counting every precious moment together"</p>
+            <p class="subtitle">"Trân trọng từng khoảnh khắc bên nhau"</p>
             <div id="quote-box" class="italic-text">Đang tải quote...</div>
         </section>
 
@@ -68,10 +68,9 @@
                     <input type="file" id="file-avt-2" accept="image/*" style="display: none;" onchange="handleAvatarUpload(2, event)">
                 </div>
             </div>
-            <p class="small-note" style="margin-bottom: 25px;">(Click vào từng hình tròn để đổi ảnh đại diện)</p>
 
             <div style="margin-bottom: 25px;">
-                <label for="start-date-input" style="font-weight: bold; color: var(--primary-color);">Chọn ngày bắt đầu yêu:</label>
+                <label for="start-date-input" style="font-weight: bold; color: var(--primary-color);">Chọn ngày bắt đầu bên nhau:</label>
                 <br>
                 <input type="date" id="start-date-input" onchange="setStartDate()" style="margin-top: 10px; cursor: pointer;">
             </div>
@@ -95,7 +94,7 @@
         </section>
 
         <section id="gallery" class="glass">
-            <h2><i class="fa-solid fa-image"></i> Album Kỷ Niệm Cloud</h2>
+            <h2><i class="fa-solid fa-image"></i> Album của những Kỷ Niệm đẹp </h2>
             <div class="upload-area">
                 <input type="file" id="image-upload" accept="image/*" multiple onchange="handleImageUpload(event)">
                 <label for="image-upload" class="upload-btn"><i class="fa-solid fa-upload"></i> Tải ảnh lên Firebase Storage</label>
@@ -105,7 +104,7 @@
         </section>
 
         <footer class="text-center">
-            <p>Made with ❤️ for everyone.</p>
+            <p>❤️Dành cả trái tim cho nhau❤️.</p>
         </footer>
     </main>
 

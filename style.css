@@ -296,7 +296,7 @@ input {
 .heart-anim {
 	position: absolute;
 	color: var(--primary-color);
-	font-size: 20px;
+	font-size: 60px;
 	animation: floatUp linear infinite;
 	opacity: 0;
 }
