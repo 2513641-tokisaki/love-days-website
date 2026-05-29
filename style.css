@@ -391,6 +391,7 @@ input {
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	argin-bottom: 20px;
 }
 @media (max-width: 600px) {
 	.avatar-wrapper img {
