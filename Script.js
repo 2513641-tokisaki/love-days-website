@@ -31,12 +31,23 @@ const quotes = [
     "Cảm ơn vì đã đến và làm thanh xuân thêm rực rỡ."
 ];
 
+/* ================= HỆ THỐNG XÁC THỰC TÀI KHOẢN ================= */
+window.switchAuthMode = function (mode) {
+    if (mode === 'register') {
+        document.getElementById('login-form').style.display = 'none';
+        document.getElementById('register-form').style.display = 'block';
+    } else {
+        document.getElementById('login-form').style.display = 'block';
+        document.getElementById('register-form').style.display = 'none';
+    }
+}
+
 // Đăng ký tài khoản mới bằng Email
-window.registerAccount = async function() {
+window.registerAccount = async function () {
     const email = document.getElementById('reg-user').value.trim();
     const pass = document.getElementById('reg-pwd').value;
     const errorPlc = document.getElementById('auth-error');
-    if(!email || !pass) return alert("Vui lòng điền đủ email và mật khẩu!");
+    if (!email || !pass) return alert("Vui lòng điền đủ email và mật khẩu!");
 
     try {
         // Chỉ cần tạo tài khoản, Firebase sẽ TỰ ĐỘNG đăng nhập và nhảy vào app
@@ -48,6 +59,27 @@ window.registerAccount = async function() {
     }
 }
 
+// Đăng nhập tài khoản
+window.loginAccount = async function () {
+    const email = document.getElementById('pwd-user').value.trim();
+    const pass = document.getElementById('pwd-input').value;
+    const errorPlc = document.getElementById('auth-error');
+
+    try {
+        await signInWithEmailAndPassword(auth, email, pass);
+    } catch (error) {
+        errorPlc.style.display = 'block';
+        errorPlc.innerText = "Sai tài khoản hoặc mật khẩu!";
+    }
+}
+
+// Đăng xuất
+window.logoutAccount = function () {
+    signOut(auth).then(() => {
+        location.reload();
+    });
+}
+
 // Lắng nghe trạng thái đăng nhập hệ thống công khai
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -55,7 +87,7 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('app-content').style.display = 'block';
         document.getElementById('user-display').innerText = `Hi, ${user.email.split('@')[0]}`;
-        
+
         // Lấy dữ liệu của user, nếu chưa có (User mới) thì tạo file data gốc
         const docRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(docRef);
@@ -71,9 +103,9 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('app-content').style.display = 'none';
 
         // DỌN DẸP BỘ NHỚ KHI ĐĂNG XUẤT ĐỂ CHỐNG LAG
-        if(counterInterval) clearInterval(counterInterval);
-        if(quoteInterval) clearInterval(quoteInterval);
-        if(heartInterval) clearInterval(heartInterval);
+        if (counterInterval) clearInterval(counterInterval);
+        if (quoteInterval) clearInterval(quoteInterval);
+        if (heartInterval) clearInterval(heartInterval);
     }
 });
 // Khai báo biến toàn cục (Thay cho biến cũ)
@@ -82,21 +114,20 @@ let userData = { startDate: new Date().toISOString().split('T')[0], events: [], 
 let counterInterval = null;
 let quoteInterval = null;  // Thêm biến quản lý Quote
 let heartInterval = null;  // Thêm biến quản lý Trái tim
-
 /* ================= KHỞI CHẠY KHÔNG GIAN RIÊNG ================= */
 function initApp() {
     document.getElementById('start-date-input').value = userData.startDate || new Date().toISOString().split('T')[0];
-    
+
     // Khởi động đồng hồ
     updateCounter();
-    if(counterInterval) clearInterval(counterInterval);
+    if (counterInterval) clearInterval(counterInterval);
     counterInterval = setInterval(updateCounter, 1000);
-    
+
     // Khởi động Quotes
     changeQuote();
-    if(quoteInterval) clearInterval(quoteInterval);
+    if (quoteInterval) clearInterval(quoteInterval);
     quoteInterval = setInterval(changeQuote, 5000);
-    
+
     createFloatingHearts();
     loadEvents();
     loadImages();
