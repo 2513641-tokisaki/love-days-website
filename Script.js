@@ -42,7 +42,6 @@ window.switchAuthMode = function(mode) {
     }
 }
 
-// Đăng ký tài khoản mới bằng Email
 window.registerAccount = async function() {
     const email = document.getElementById('reg-user').value.trim();
     const pass = document.getElementById('reg-pwd').value;
@@ -50,16 +49,14 @@ window.registerAccount = async function() {
     if(!email || !pass) return alert("Vui lòng điền đủ email và mật khẩu!");
 
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-        const user = userCredential.user;
-        // Tạo sẵn một document trống lưu dữ liệu cho User này trong Firestore Database
-        await setDoc(doc(db, "users", user.uid), userData);
+        // Chỉ cần tạo tài khoản, Firebase sẽ TỰ ĐỘNG đăng nhập và nhảy vào app
+        await createUserWithEmailAndPassword(auth, email, pass);
         alert("Đăng ký thành công!");
-        switchAuthMode('login');
     } catch (error) {
         errorPlc.style.display = 'block';
-        errorPlc.innerText = error.message;
+        errorPlc.innerText = "Lỗi: " + error.message;
     }
+}
 }
 
 // Đăng nhập tài khoản
@@ -83,7 +80,6 @@ window.logoutAccount = function() {
     });
 }
 
-// Lắng nghe trạng thái đăng nhập hệ thống công khai
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUserObj = user;
@@ -91,33 +87,73 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('app-content').style.display = 'block';
         document.getElementById('user-display').innerText = `Hi, ${user.email.split('@')[0]}`;
         
-        // Lấy dữ liệu của user này từ Cloud về trang web
+        // Lấy dữ liệu của user, nếu chưa có (User mới) thì tạo file data gốc
         const docRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             userData = docSnap.data();
+        } else {
+            userData = { startDate: new Date().toISOString().split('T')[0], events: [], images: [] };
+            await setDoc(docRef, userData);
         }
         initApp();
     } else {
         document.getElementById('auth-screen').style.display = 'flex';
         document.getElementById('app-content').style.display = 'none';
+
+        // DỌN DẸP BỘ NHỚ KHI ĐĂNG XUẤT ĐỂ CHỐNG LAG
+        if(counterInterval) clearInterval(counterInterval);
+        if(quoteInterval) clearInterval(quoteInterval);
+        if(heartInterval) clearInterval(heartInterval);
     }
 });
+
+// Khai báo biến toàn cục (Thay cho biến cũ)
+let currentUserObj = null;
+let userData = { startDate: new Date().toISOString().split('T')[0], events: [], images: [] };
+let counterInterval = null;
+let quoteInterval = null;  // Thêm biến quản lý Quote
+let heartInterval = null;  // Thêm biến quản lý Trái tim
 
 /* ================= KHỞI CHẠY KHÔNG GIAN RIÊNG ================= */
 function initApp() {
     document.getElementById('start-date-input').value = userData.startDate || new Date().toISOString().split('T')[0];
+    
+    // Khởi động đồng hồ
     updateCounter();
     if(counterInterval) clearInterval(counterInterval);
     counterInterval = setInterval(updateCounter, 1000);
     
+    // Khởi động Quotes
     changeQuote();
-    setInterval(changeQuote, 5000);
+    if(quoteInterval) clearInterval(quoteInterval);
+    quoteInterval = setInterval(changeQuote, 5000);
+    
     createFloatingHearts();
     loadEvents();
     loadImages();
 }
 
+/* ================= CÁC HIỆU ỨNG THỜI TIẾT, HẠT VÀ NHẠC ================= */
+// ... (Hàm changeQuote giữ nguyên) ...
+
+function createFloatingHearts() {
+    const container = document.getElementById('hearts-container');
+    if(!container) return;
+
+    // Xóa bộ tạo tim cũ trước khi chạy bộ mới (CHỐNG LAG)
+    if(heartInterval) clearInterval(heartInterval);
+
+    heartInterval = setInterval(() => {
+        const heart = document.createElement('i');
+        heart.classList.add('fa-solid', 'fa-heart', 'heart-anim');
+        heart.style.left = Math.random() * 100 + 'vw';
+        heart.style.animationDuration = Math.random() * 3 + 2 + 's';
+        heart.style.fontSize = Math.random() * 20 + 10 + 'px';
+        container.appendChild(heart);
+        setTimeout(() => { heart.remove(); }, 5000);
+    }, 600);
+}
 /* ================= BỘ ĐẾM THỜI GIANReal-time ================= */
 window.setStartDate = async function() {
     const inputDate = document.getElementById('start-date-input').value;
